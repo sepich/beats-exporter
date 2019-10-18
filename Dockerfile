@@ -5,5 +5,5 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 USER 1000
-COPY . .
-CMD [ "python", "./beats-exporter.py" ]
+COPY beats-exporter.py .
+ENTRYPOINT [ "./beats-exporter.py" ]
