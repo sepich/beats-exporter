@@ -55,13 +55,16 @@ def get_info(args):
 
 def get_metric(data, prefix):
     result = []
-    for k in data:
-        if type(data[k]) == dict:
-            result += get_metric(data[k], f'{prefix}_{k}')
-        elif type(data[k]) == str:
-            result += [f'{prefix}{{{k}="{data[k]}"}} 1']
+    for k, v in data.items():
+        if type(v) == dict:
+            if not [x for x in v if type(v[x]) in [dict, str]] and len(v) > 1:
+                result += [f'{prefix}{{{k}="{x}"}} {v[x]}' for x in v]
+            else:
+                result += get_metric(v, f'{prefix}_{k}')
+        elif type(v) == str:
+            result += [f'{prefix}{{{k}="{v}"}} 1']
         else:
-            result += [f'{prefix}_{k} {data[k]}']
+            result += [f'{prefix}_{k} {v}']
     return result
 
 
