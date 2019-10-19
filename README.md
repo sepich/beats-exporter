@@ -86,6 +86,6 @@ To reduce number of metrics (cardinality) you can use (multiple) `filter` argume
 $ ./beats-exporter.py -f=error -f=version
 $ curl localhost:8080/metrics
 filebeat_info{version="7.4.0"} 1
-filebeat_libbeat_output_read_errors 0
-filebeat_libbeat_output_write_errors 0
+filebeat_libbeat_output{read="errors"} 0
+filebeat_libbeat_output{write="errors"} 0
 ```
