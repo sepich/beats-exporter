@@ -61,11 +61,13 @@ async def get_info(args):
 
 def get_metric(data, prefix):
     text = []
-    if type(data) == dict:
-        for k in data:
+    for k in data:
+        if type(data[k]) == dict:
             text += get_metric(data[k], f'{prefix}_{k}')
-    else:
-        return [f'{prefix} {data}']
+        elif type(data[k]) == str:
+            text += [f'{prefix}{{{k}="{data[k]}"}} 1']
+        else:
+            text += [f'{prefix}_{k} {data[k]}']
     return text
 
 
