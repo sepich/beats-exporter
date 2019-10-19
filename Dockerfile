@@ -1,4 +1,6 @@
 FROM python:3.7-slim
+ENV PYTHONDONTWRITEBYTECODE=true
+ENV PYTHONUNBUFFERED=true
 
 WORKDIR /usr/src/app
 COPY requirements.txt ./

@@ -131,6 +131,7 @@ spec:
         prometheus.io/port: "8080"
     spec:
       serviceAccountName: filebeat
+      enableServiceLinks: false
       terminationGracePeriodSeconds: 30
       priorityClassName: system-node-critical
       containers:
@@ -182,10 +183,10 @@ spec:
           runAsUser: 0
         resources:
           limits:
-            memory: 100Mi
+            memory: 50Mi
           requests:
             cpu: 100m
-            memory: 100Mi
+            memory: 50Mi
         volumeMounts:
         - name: config
           mountPath: /etc/beats/
@@ -201,8 +202,9 @@ spec:
         - name: hostname
           mountPath: /etc/hostname
           readOnly: true
-      - name: exporter
+      - name: beats-exporter
         image: sepa/beats-exporter
+        imagePullPolicy: Always
         args:
           - -l=error
           - -p=5066
@@ -215,9 +217,9 @@ spec:
           runAsUser: 1000
         resources:
           limits:
-            memory: 100Mi
+            memory: 32Mi
           requests:
-            memory: 100Mi
+            memory: 32Mi
       volumes:
       - name: config
         configMap:
