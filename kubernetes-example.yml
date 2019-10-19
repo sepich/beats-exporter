@@ -1,0 +1,289 @@
+# https://raw.githubusercontent.com/elastic/beats/7.4/deploy/kubernetes/filebeat-kubernetes.yaml
+# with journalbeat and exporter
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beats
+  namespace: kube-system
+  labels:
+    app: beats
+data:
+  beats.yml: |-
+    max_procs: 1
+    logging.level: warning  # error, warning, info, debug
+    logging.metrics.enabled: false
+    # Stats can be access through http://localhost:5066/stats
+    http:
+      enabled: true
+      port: 5066
+    filebeat.autodiscover:
+      providers:
+        - type: kubernetes
+          host: ${NODE_NAME}
+          # https://www.elastic.co/guide/en/beats/filebeat/master/configuration-autodiscover-hints.html
+          hints.enabled: true
+          hints.default_config:
+            type: container
+            paths:
+              - /var/log/containers/*${data.kubernetes.container.id}.log
+            # tail_files: 'true'  # only for initial sync
+            multiline:
+              pattern: '^[[:space:]]+'
+              match: after
+              negate: 'false'
+              max_lines: 500
+              timeout: 5s
+            processors:
+              - drop_fields:
+                  ignore_missing: true
+                  fields:
+                    - kubernetes.labels.pod-template-hash
+                    - kubernetes.labels.pod-template-generation
+                    - kubernetes.labels.controller-revision-hash
+                    - kubernetes.pod.uid
+                    - kubernetes.replicaset.name
+              - rename:
+                  ignore_missing: true
+                  fields:
+                  - from: kubernetes
+                    to: k8s
+              - rename:
+                  ignore_missing: true
+                  fields:
+                  - from: k8s.labels
+                    to: ""
+              - rename:
+                  ignore_missing: true
+                  fields:
+                  - from: stream
+                    to: source
+              - rename:
+                  ignore_missing: true
+                  fields:
+                  - from: k8s.node.name
+                    to: server
+    journalbeat:
+      inputs:
+      - paths: []
+        seek: cursor  # use 'tail' for first run
+        processors:
+          - rename:
+              ignore_missing: true
+              fields:
+              - from: host.hostname
+                to: server
+          - rename:
+              when:
+                has_fields: ['systemd.unit']
+              fields:
+              - from: systemd.unit
+                to: source
+          - rename:
+              when:
+                not:
+                  has_fields: ['source']
+              ignore_missing: true
+              fields:
+              - from: "syslog.identifier"
+                to: "source"
+          - drop_fields:
+              ignore_missing: true
+              fields:
+                - process
+                - systemd
+                - journald
+                - event
+                - syslog
+    processors:
+      - drop_fields:
+          ignore_missing: true
+          fields:
+            - '@metadata'
+            - agent
+            - beats
+            - ecs
+            - host
+            - input.type
+            - log
+    output.logstash:
+      hosts:
+      - "${COLLECTOR}"
+      max_retries: -1
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: beats
+  namespace: kube-system
+  labels:
+    app: beats
+spec:
+  selector:
+    matchLabels:
+      app: beats
+  template:
+    metadata:
+      labels:
+        app: beats
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      serviceAccountName: filebeat
+      terminationGracePeriodSeconds: 30
+      priorityClassName: system-node-critical
+      containers:
+      - name: filebeat
+        image: docker.elastic.co/beats/filebeat:7.4.0
+        args:
+        - -c
+        - /etc/beats/beats.yml
+        - -e
+        env:
+        - name: COLLECTOR
+          value: logstash.fqdn.local
+        # needs for k8s discovery
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        securityContext:
+          runAsUser: 0
+        resources:
+          limits:
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/beats/
+        - name: fbdata
+          mountPath: /usr/share/filebeat/data
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: varlog
+          mountPath: /var/log
+          readOnly: true
+      - name: journalbeat
+        image: docker.elastic.co/beats/journalbeat:7.4.0
+        args:
+          - -c
+          - /etc/beats/beats.yml
+          - -e
+          - -E
+          - http.port=5067
+        env:
+        - name: COLLECTOR
+          value: logstash.fqdn.local
+        securityContext:
+          runAsUser: 0
+        resources:
+          limits:
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/beats/
+        - name: jbdata
+          mountPath: /usr/share/journalbeat/data
+        - name: varlogjournal
+          mountPath: /var/log/journal
+        - name: systemd
+          mountPath: /run/systemd
+        - name: machine-id
+          mountPath: /etc/machine-id
+          readOnly: true
+        - name: hostname
+          mountPath: /etc/hostname
+          readOnly: true
+      - name: exporter
+        image: sepa/beats-exporter
+        args:
+          - -l=error
+          - -p=5066
+          - -p=5067
+          - -f=version
+          - -f=uptime
+          - -f=handles
+          - -f=output
+        securityContext:
+          runAsUser: 1000
+        resources:
+          limits:
+            memory: 100Mi
+          requests:
+            memory: 100Mi
+      volumes:
+      - name: config
+        configMap:
+          defaultMode: 0600
+          name: beats
+      - name: varlogjournal
+        hostPath:
+          path: /var/log/journal
+      - name: machine-id
+        hostPath:
+          path: /etc/machine-id
+      - name: systemd
+        hostPath:
+          path: /run/systemd
+      - name: hostname
+        hostPath:
+          path: /etc/hostname
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: varlog
+        hostPath:
+          path: /var/log
+      # data folder stores a registry of read status for all files, so we don't send everything again on a Beat pod restart
+      - name: fbdata
+        hostPath:
+          path: /var/lib/filebeat-data
+          type: DirectoryOrCreate
+      - name: jbdata
+        hostPath:
+          path: /var/lib/journalbeat-data
+          type: DirectoryOrCreate
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: filebeat
+subjects:
+- kind: ServiceAccount
+  name: filebeat
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: filebeat
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: filebeat
+  labels:
+    app: filebeat
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources:
+  - namespaces
+  - pods
+  verbs:
+  - get
+  - watch
+  - list
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: filebeat
+  namespace: kube-system
+  labels:
+    app: filebeat
