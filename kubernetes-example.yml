@@ -213,6 +213,7 @@ spec:
           - -f=uptime
           - -f=handles
           - -f=output
+          - -f=pipeline{
         securityContext:
           runAsUser: 1000
         resources:

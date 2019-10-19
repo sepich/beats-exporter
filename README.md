@@ -43,16 +43,26 @@ And configure automatic Prometheus discovery:
 ```
 You should start to receive metrics in Prometheus:
 ```bash
-$ k -n kube-system exec beats-lt4rm -- curl -s localhost:8080/metrics | grep info
+$ k -n kube-system exec beats-9chbm -- curl -s localhost:8080/metrics | grep info
 Defaulting container name to filebeat.
-Use 'kubectl describe pod/beats-lt4rm -n kube-system' to see all of the containers in this pod.
+Use 'kubectl describe pod/beats-9chbm -n kube-system' to see all of the containers in this pod.
 filebeat_info{version="7.4.0"} 1
-filebeat_beat_info{ephemeral_id="7382453e-f660-4272-9e2a-1d114de96961"} 1
-filebeat_beat_info_uptime_ms 25460
+filebeat_beat_info_uptime_ms 5268342
 journalbeat_info{version="7.4.0"} 1
-journalbeat_beat_info{ephemeral_id="af3a12f2-1aac-4235-b24d-009137956eaa"} 1
-journalbeat_beat_info_uptime_ms 25225
+journalbeat_beat_info_uptime_ms 5268038
 ```
+Example Alert:
+```yml
+  - alert: FileBeatQueue
+    expr: filebeat_libbeat_pipeline{events="active"} >100 and delta(filebeat_libbeat_pipeline{events="active"}[15m]) >0
+    for: 15m
+    labels:
+      severity: warning
+      instance: '{{$labels.kubernetes_pod_node_name}}'
+    annotations:
+      description: Filebeat queue is {{printf "%.0f" $value}} and growing
+```
+
 
 ## Usage
 ```
@@ -79,4 +89,3 @@ filebeat_info{version="7.4.0"} 1
 filebeat_libbeat_output_read_errors 0
 filebeat_libbeat_output_write_errors 0
 ```
-
