@@ -78,7 +78,8 @@ optional arguments:
                         Filter metrics (default: disabled)
   -l {info,warn,error}, --log {info,warn,error}
                         Logging level (default: info)
-  -wp PORT, --webport PORT   Port under which to expose service ( default: 8080)                      
+  -wp PORT, --webport PORT   
+                        Port under which to expose service ( default: 8080)                      
 ```
 You can use multiple `port` arguments to scrape multiple Beats from same instance of exporter.
 
@@ -92,7 +93,7 @@ filebeat_libbeat_output{write="errors"} 0
 ```
 
 ```
-$ ./beats-exporter.py -f=error -f=version -wp 8088
+$ ./beats-exporter.py -f=error -f=version -wp=8088
 $ curl localhost:8088/metrics
 filebeat_info{version="7.4.0"} 1
 filebeat_libbeat_output{read="errors"} 0
