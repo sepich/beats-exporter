@@ -214,7 +214,7 @@ spec:
         securityContext:
           runAsUser: 100
         ports:
-          - containerPort: 8080
+          - containerPort: 8088
             name: metrics
             protocol: TCP
         resources:

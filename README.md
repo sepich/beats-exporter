@@ -106,7 +106,7 @@ metricbeat_beat_info{version="7.16.2"} 1
 ## Usage
 ```
 $ docker run sepa/beats-exporter -h
-usage: beats-exporter [-h] [-p PORT] [-f FILTER] [-l {info,warn,error}] [-wp PORT]
+usage: beats-exporter [-h] [-p PORT] [-f FILTER] [-l {info,warn,error}] [-mp PORT]
 
 Prometheus exporter for Elastic Beats
 
