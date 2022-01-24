@@ -43,22 +43,6 @@ And configure automatic Prometheus discovery:
 ```
 
 
-### Kubernetes example for exposed metric with non-default port
-if `beats-exporter` exposes  on non-default port 8088:
-```yml
-      - name: exporter
-        image: sepa/beats-exporter
-        args:
-          - -l=info
-          - -p=5066
-          - -m=8088
-```
-configure automatic Prometheus discovery on correct port.
-```yml
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8088"
-
 
 You should start to receive metrics in Prometheus:
 ```bash
@@ -80,6 +64,24 @@ Example Alert:
       instance: '{{$labels.kubernetes_pod_node_name}}'
     annotations:
       description: Filebeat queue is {{printf "%.0f" $value}} and growing
+```
+
+### Kubernetes example for exposed metric with non-default port
+if `beats-exporter` exposes  on non-default port 8088:
+```yml
+      - name: exporter
+        image: sepa/beats-exporter
+        args:
+          - -l=info
+          - -p=5066
+          - -m=8088
+```
+configure automatic Prometheus discovery on correct port.
+```yml
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8088"
+
 ```
 
 ## Usage
