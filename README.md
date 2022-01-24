@@ -87,7 +87,8 @@ configure automatic Prometheus discovery on correct port.
 ## Usage
 ```
 $ docker run sepa/beats-exporter -h
-usage: beats-exporter [-h] [-p PORT] [-f FILTER] [-l {info,warn,error}] [-mp PORT]
+usage: beats-exporter [-h] [-p PORT] [-f FILTER] [-l {info,warn,error}]
+                      [-m METRICS_PORT]
 
 Prometheus exporter for Elastic Beats
 
@@ -98,8 +99,8 @@ optional arguments:
                         Filter metrics (default: disabled)
   -l {info,warn,error}, --log {info,warn,error}
                         Logging level (default: info)
-  -m PORT, --metrics-port PORT   
-                        Expose metrics on port (default: 8080)                      
+  -m METRICS_PORT, --metrics-port METRICS_PORT
+                        Expose metrics on port (default: 8080)
 ```
 You can use multiple `port` arguments to scrape multiple Beats from same instance of exporter.
 
