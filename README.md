@@ -41,9 +41,6 @@ And configure automatic Prometheus discovery:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
 ```
-
-
-
 You should start to receive metrics in Prometheus:
 ```bash
 $ k -n kube-system exec beats-9chbm -- curl -s localhost:8080/metrics | grep info
