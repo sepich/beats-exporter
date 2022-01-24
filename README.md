@@ -41,6 +41,25 @@ And configure automatic Prometheus discovery:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
 ```
+
+
+### Kubernetes example for exposed metric with non-default port
+if `beats-exporter` exposes  on non-default port 8088:
+```yml
+      - name: exporter
+        image: sepa/beats-exporter
+        args:
+          - -l=info
+          - -p=5066
+          - -m=8088
+```
+configure automatic Prometheus discovery on correct port.
+```yml
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8088"
+
+
 You should start to receive metrics in Prometheus:
 ```bash
 $ k -n kube-system exec beats-9chbm -- curl -s localhost:8080/metrics | grep info
@@ -63,46 +82,6 @@ Example Alert:
       description: Filebeat queue is {{printf "%.0f" $value}} and growing
 ```
 
-## Kubernetes example for exposed metric with non-default port
-Example deployment for Kubernetes provided in `kubernetes-example-metricport.yml`. It is DaemonSet with 2 containers in each pod to be scheduled to each k8s cluster node. `Metricbeat` reads cpu, mem and other system info and `beats-exporter` exports stats for both previous container.
-
-Here are some highlights:  
-Expose  Beats internal metrics exposure :
-```yml
-    # Stats can be access through http://localhost:5066/stats
-          "-E",
-          "http.enabled=true",
-          "-E",
-          "http.port=5066",
-```
-
-Next, we configure `beats-exporter` to collect metrics from metric beats and expose it on non-default port 8088:
-```yml
-      - name: exporter
-        image: sepa/beats-exporter
-        args:
-          - -l=info
-          - -p=5066
-          - -mp=8088
-```
-And configure automatic Prometheus discovery:
-```yml
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8088"
-```
-You should start to receive metrics in Prometheus:
-```bash
-$ kubectl exec pod/metricbeat-cjptn -it -- curl -s localhost:8088/metrics | grep info
-Defaulted container "metricbeat" out of: metricbeat, beats-exporter
-metricbeat_info{version="7.16.2"} 1
-metricbeat_beat_info{ephemeral_id="eda53a95-6a43-43df-8040-73cd7329e7b2"} 1
-metricbeat_beat_info_uptime_ms 581829
-metricbeat_beat_info{version="7.16.2"} 1
-```
-
-
-
 ## Usage
 ```
 $ docker run sepa/beats-exporter -h
@@ -117,7 +96,7 @@ optional arguments:
                         Filter metrics (default: disabled)
   -l {info,warn,error}, --log {info,warn,error}
                         Logging level (default: info)
-  -mp PORT, --metrics-port PORT   
+  -m PORT, --metrics-port PORT   
                         Expose metrics on port (default: 8080)                      
 ```
 You can use multiple `port` arguments to scrape multiple Beats from same instance of exporter.
@@ -126,16 +105,6 @@ To reduce number of metrics (cardinality) you can use (multiple) `filter` argume
 ```
 $ ./beats-exporter.py -f=error -f=version
 $ curl localhost:8080/metrics
-filebeat_info{version="7.4.0"} 1
-filebeat_libbeat_output{read="errors"} 0
-filebeat_libbeat_output{write="errors"} 0
-```
-
-
-To expose metrics on from beats-exporter on non-default port, please see example:
-```
-$ ./beats-exporter.py -f=error -f=version -mp=8088
-$ curl localhost:8088/metrics
 filebeat_info{version="7.4.0"} 1
 filebeat_libbeat_output{read="errors"} 0
 filebeat_libbeat_output{write="errors"} 0

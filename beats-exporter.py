@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument('-p', '--port', action='append', type=int, default=[5066], help='Port to scrape (default: 5066)')
     parser.add_argument('-f', '--filter', action='append', type=str, default=[], help='Filter metrics (default: disabled)')
     parser.add_argument('-l', '--log', choices=['info', 'warn', 'error'], default='info', help='Logging level (default: info)')
-    parser.add_argument('-mp','--metrics-port', action='store', type=int, default=8080, help='Expose metrics on port (default: 8080)')   
+    parser.add_argument('-m','--metrics-port', action='store', type=int, default=8080, help='Expose metrics on port (default: 8080)')   
     args = parser.parse_args()
     logger.setLevel(getattr(logging, args.log.upper()))
     return args
