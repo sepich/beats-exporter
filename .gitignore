@@ -3,3 +3,4 @@ bin/
 lib/
 include/
 .vscode/
+.venv/

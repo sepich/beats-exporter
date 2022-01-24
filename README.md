@@ -63,11 +63,29 @@ Example Alert:
       description: Filebeat queue is {{printf "%.0f" $value}} and growing
 ```
 
+### Kubernetes example for exposed metric with non-default port
+if `beats-exporter` exposes  on non-default port 8088:
+```yml
+      - name: exporter
+        image: sepa/beats-exporter
+        args:
+          - -l=info
+          - -p=5066
+          - -m=8088
+```
+configure automatic Prometheus discovery on correct port.
+```yml
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8088"
+
+```
 
 ## Usage
 ```
 $ docker run sepa/beats-exporter -h
 usage: beats-exporter [-h] [-p PORT] [-f FILTER] [-l {info,warn,error}]
+                      [-m METRICS_PORT]
 
 Prometheus exporter for Elastic Beats
 
@@ -78,6 +96,8 @@ optional arguments:
                         Filter metrics (default: disabled)
   -l {info,warn,error}, --log {info,warn,error}
                         Logging level (default: info)
+  -m METRICS_PORT, --metrics-port METRICS_PORT
+                        Expose metrics on port (default: 8080)
 ```
 You can use multiple `port` arguments to scrape multiple Beats from same instance of exporter.
 
